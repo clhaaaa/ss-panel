@@ -2,23 +2,40 @@
 
 namespace App\Middleware;
 
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use App\Services\Auth as AuthService;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-class Api{
+class Api
+{
+    use Helper;
 
-    public function __invoke(ServerRequestInterface $request,ResponseInterface $response, $next)
+    public function __invoke(Request $request, Response $response, $next)
     {
-        //$response->getBody()->write('BEFORE');
-        $user = AuthService::getUser();
-        if(!$user->isLogin){
-            // @TODO no login action
-            $response->getBody()->write('Access Denied');
-            return $response;
+        $user = $this->getUserFromReq($request);
+        if (!$user || !$user->isLogin) {
+            return $this->denied($response);
+        }
+        if (!$user->isAdmin()) {
+            $id = $request->getAttribute('routeInfo')[2]['id'];
+            if ($id != $user->id) {
+                return $this->denied($response);
+            }
         }
         $response = $next($request, $response);
-        //$response->getBody()->write('AFTER');
+
         return $response;
+    }
+
+    /**
+     * @param Response $response
+     * @return Response
+     */
+    public function denied(Response $response)
+    {
+        $newResponse = $response->withJson([
+            "error_code" => 401,
+            "message" => "Access Denied",
+        ], 401);
+        return $newResponse;
     }
 }

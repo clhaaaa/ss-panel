@@ -2,36 +2,54 @@
 
 namespace App\Controllers;
 
-
-
-use App\Services\Auth;
-use App\Services\View;
+use Slim\Http\Response;
+use App\Services\Factory;
+use Interop\Container\ContainerInterface;
+use Pongtan\Http\Controller;
+use Pongtan\View\ViewTrait;
+use App\Models\User;
 
 /**
- * BaseController
+ * BaseController.
  */
-
-class BaseController
+class BaseController extends Controller
 {
+    use ViewTrait;
 
-    public $view;
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    public $logger;
 
-    public $smarty;
+    /**
+     * @var User
+     */
+    protected $user;
 
-    public function construct__(){
-
+    public function __construct(ContainerInterface $ci)
+    {
+        $this->logger = Factory::getLogger();
+        parent::__construct($ci);
     }
 
-    public function smarty(){
-        $this->smarty = View::getSmarty();
-        return $this->smarty;
+    /**
+     * @return User
+     */
+    public function getUser()
+    {
+        return user();
     }
 
-    public function view(){
-        return $this->smarty();
-    }
-
-    public function echoJson(){
-
+    /**
+     * @param Response $response
+     * @param $data
+     * @param int $statusCode
+     * @return mixed
+     */
+    public function echoJsonWithData(Response $response, $data = [], $statusCode = 200)
+    {
+        return $this->echoJson($response, [
+            'data' => $data,
+        ], $statusCode);
     }
 }
